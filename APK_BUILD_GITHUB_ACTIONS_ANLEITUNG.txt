@@ -1,0 +1,25 @@
+Zuhause am Bach Mobile Android V1.0 – APK automatisch bauen
+
+So kommst du zur fertigen APK:
+
+1. ZIP entpacken.
+2. Den kompletten Inhalt in ein neues GitHub-Repository hochladen.
+3. GitHub öffnen.
+4. Reiter "Actions" öffnen.
+5. Workflow "Build Android APK" starten.
+6. Warten bis der Lauf grün ist.
+7. Unten bei "Artifacts" herunterladen:
+   Zuhause_am_Bach_Mobile_V1_0_APK
+8. Darin liegt die installierbare APK:
+   app-debug.apk
+
+Installation am Android-Handy:
+1. APK aufs Handy kopieren.
+2. APK antippen.
+3. Installation aus unbekannter Quelle erlauben.
+4. Installieren.
+5. App "ZAB Mobile" starten.
+
+Hinweis:
+Diese APK ist eine Debug-APK für private Nutzung.
+Für Play Store wäre später eine signierte Release-APK nötig.
