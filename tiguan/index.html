@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" />
+  <title>Tiguan TankPlaner</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color-scheme:dark;background:#020617;color:#e2e8f0}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0f172a,#020617 38%);min-height:100vh}
+    main{max-width:720px;margin:auto;padding:18px 16px 42px}.hero{padding:18px 0 10px}.hero h1{margin:0;font-size:30px}.hero p{margin:6px 0;color:#94a3b8}
+    .card{background:#0f172acc;border:1px solid #1e293b;border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 8px 30px #0004}
+    label{display:block;font-size:13px;color:#94a3b8;margin:12px 0 6px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input,button,select{width:100%;border-radius:13px;border:1px solid #334155;background:#020617;color:#f8fafc;padding:13px 14px;font-size:16px}
+    button{background:#2563eb;border-color:#2563eb;font-weight:700;cursor:pointer;margin-top:10px}.secondary{background:#111827;border-color:#334155}.good{color:#86efac}.warn{color:#fde68a}.bad{color:#fca5a5}
+    .metric{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #1e293b}.metric:last-child{border-bottom:0}.big{font-size:22px;font-weight:800}
+    .note{font-size:13px;color:#94a3b8;line-height:1.45}.pill{display:inline-block;padding:6px 9px;border-radius:99px;background:#172554;color:#bfdbfe;font-size:12px;margin:3px 4px 3px 0}
+    #installBtn{display:none;background:#16a34a;border-color:#16a34a}.station{padding:12px;border:1px solid #334155;border-radius:14px;margin-top:10px}.station strong{display:block}
+    a{color:#93c5fd}.footer{font-size:12px;color:#64748b;margin-top:18px}
+  </style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <h1>🚙 Tiguan TankPlaner</h1>
+    <p>Diesel · 6,0 l/100 km · Rückfahrt nach Aggsbach Markt</p>
+  </div>
+
+  <button id="installBtn">📲 App installieren</button>
+
+  <section class="card">
+    <div class="pill">GPS</div><div class="pill">Google Maps</div><div class="pill">Rundfahrt</div>
+    <button id="locateBtn" class="secondary">📍 Aktuellen Standort ermitteln</button>
+    <div id="locText" class="note" style="margin-top:8px">Standort noch nicht ermittelt.</div>
+
+    <label for="destination">Ziel</label>
+    <input id="destination" placeholder="z. B. Wien Hauptbahnhof" autocomplete="street-address" />
+
+    <div class="row">
+      <div><label for="range">Restreichweite laut Tiguan (km)</label><input id="range" inputmode="decimal" placeholder="z. B. 320" /></div>
+      <div><label for="cons">Verbrauch (l/100 km)</label><input id="cons" inputmode="decimal" value="6,0" /></div>
+    </div>
+
+    <label for="reserve">Sicherheitsreserve (km)</label>
+    <input id="reserve" inputmode="decimal" value="25" />
+
+    <button id="calcBtn">💶 Fahrt wirtschaftlich prüfen</button>
+    <button id="mapsBtn" class="secondary">🗺️ Route in Google Maps öffnen</button>
+  </section>
+
+  <section class="card" id="resultCard" hidden>
+    <div class="big" id="headline"></div>
+    <div id="metrics" style="margin-top:10px"></div>
+    <p class="note" id="advice"></p>
+  </section>
+
+  <section class="card">
+    <strong>⛽ Günstig tanken</strong>
+    <p class="note">Für aktuelle österreichische Dieselpreise öffnet die App den offiziellen E-Control-Spritpreisrechner. Vergleiche dort eine Tankstelle nahe deiner Route; ein kleiner Umweg kann einen niedrigeren Literpreis wieder aufzehren.</p>
+    <button id="fuelBtn" class="secondary">E-Control Spritpreisrechner öffnen</button>
+  </section>
+
+  <p class="footer">Die App speichert Standort und Eingaben nicht auf einem Server. Routen werden an Google Maps übergeben. Die lokale Wirtschaftlichkeitsrechnung basiert auf deiner eingegebenen Restreichweite und dem Verbrauch.</p>
+</main>
+<script>
+const HOME='Aggsbach Markt, Österreich';
+let coords=null, deferredPrompt=null;
+const $=id=>document.getElementById(id);
+const num=v=>Number(String(v).replace(',','.'));
+function enc(v){return encodeURIComponent(v)}
+function mapsUrl(){
+  const dest=$('destination').value.trim();
+  if(!dest) throw new Error('Bitte zuerst ein Ziel eingeben.');
+  const origin=coords?`${coords.lat},${coords.lon}`:'';
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving${origin?`&origin=${enc(origin)}`:''}&destination=${enc(HOME)}&waypoints=${enc(dest)}`;
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('installBtn').style.display='block'});
+$('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('installBtn').style.display='none'}else alert('Im Browser-Menü „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.')};
+$('locateBtn').onclick=()=>{
+  if(!navigator.geolocation){$('locText').textContent='GPS wird von diesem Browser nicht unterstützt.';return;}
+  $('locText').textContent='Standort wird ermittelt…';
+  navigator.geolocation.getCurrentPosition(p=>{coords={lat:p.coords.latitude.toFixed(6),lon:p.coords.longitude.toFixed(6)};$('locText').textContent=`Standort: ${coords.lat}, ${coords.lon} · Genauigkeit ca. ${Math.round(p.coords.accuracy)} m`;},e=>{$('locText').textContent='Standort konnte nicht ermittelt werden. Bitte Standortfreigabe prüfen.';},{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+};
+$('mapsBtn').onclick=()=>{try{location.href=mapsUrl()}catch(e){alert(e.message)}};
+$('fuelBtn').onclick=()=>{location.href='https://www.e-control.at/spritpreisrechner'};
+$('calcBtn').onclick=()=>{
+  const range=num($('range').value), cons=num($('cons').value), reserve=num($('reserve').value);
+  if(!Number.isFinite(range)||range<=0||!Number.isFinite(cons)||cons<=0||!Number.isFinite(reserve)||reserve<0){alert('Bitte gültige Werte für Reichweite, Verbrauch und Reserve eingeben.');return;}
+  const usable=Math.max(0,range-reserve), liters=range*cons/100, usableLiters=usable*cons/100;
+  $('resultCard').hidden=false;
+  $('headline').textContent=usable>0?'✅ Fahrreserve berechnet':'⚠️ Sofort tanken empfohlen';
+  $('headline').className='big '+(usable>50?'good':usable>0?'warn':'bad');
+  $('metrics').innerHTML=`<div class="metric"><span>Restreichweite</span><strong>${range.toFixed(0)} km</strong></div><div class="metric"><span>Sicher nutzbar</span><strong>${usable.toFixed(0)} km</strong></div><div class="metric"><span>Verbrauch</span><strong>${cons.toFixed(1).replace('.',',')} l/100 km</strong></div><div class="metric"><span>Rechnerischer Dieselbestand</span><strong>ca. ${liters.toFixed(1).replace('.',',')} l</strong></div><div class="metric"><span>Davon bis Reserve nutzbar</span><strong>ca. ${usableLiters.toFixed(1).replace('.',',')} l</strong></div>`;
+  $('advice').textContent='Für die exakte Entfernung der Rundfahrt öffne jetzt Google Maps. Liegt die gesamte Strecke über „Sicher nutzbar“, plane einen Tankstopp. Nutze anschließend den E-Control-Spritpreisrechner und bevorzuge eine günstige Station mit möglichst kleinem Umweg.';
+  localStorage.setItem('tiguan',JSON.stringify({destination:$('destination').value,range:$('range').value,cons:$('cons').value,reserve:$('reserve').value}));
+};
+try{const s=JSON.parse(localStorage.getItem('tiguan')||'null');if(s){$('destination').value=s.destination||'';$('range').value=s.range||'';$('cons').value=s.cons||'6,0';$('reserve').value=s.reserve||'25'}}catch{}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+</script>
+</body>
+</html>
