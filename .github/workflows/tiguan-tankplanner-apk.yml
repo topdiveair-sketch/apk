@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'TiguanTankPlanner-source.b64'
+      - 'TiguanTankPlanner/**'
       - '.github/workflows/tiguan-tankplanner-apk.yml'
 
 jobs:
@@ -23,19 +23,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Restore project
-        run: |
-          base64 -d TiguanTankPlanner-source.b64 > /tmp/tiguan.zip
-          rm -rf /tmp/tiguan-src
-          mkdir -p /tmp/tiguan-src
-          unzip -q /tmp/tiguan.zip -d /tmp/tiguan-src
       - name: Build installable APK
-        working-directory: /tmp/tiguan-src/TiguanTankPlanner
+        working-directory: TiguanTankPlanner
         run: gradle assembleDebug
       - name: Prepare installer
-        run: cp /tmp/tiguan-src/TiguanTankPlanner/app/build/outputs/apk/debug/app-debug.apk TiguanTankPlaner-Installer.apk
+        run: cp TiguanTankPlanner/app/build/outputs/apk/debug/app-debug.apk TiguanTankPlaner.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: TiguanTankPlaner-Installer
-          path: TiguanTankPlaner-Installer.apk
+          name: TiguanTankPlaner-APK
+          path: TiguanTankPlaner.apk
           retention-days: 30
